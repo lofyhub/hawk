@@ -1,0 +1,5 @@
+ALTER TABLE corruption_cases
+ADD COLUMN link VARCHAR(255) NULL;
+
+ALTER TABLE user_reviews
+ADD COLUMN link VARCHAR(255) NULL;

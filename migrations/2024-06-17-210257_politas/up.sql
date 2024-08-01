@@ -1,0 +1,32 @@
+CREATE TABLE politicians (
+  politician_id  SERIAL PRIMARY KEY,
+  name VARCHAR NOT NULL,
+  photo_url VARCHAR NULL,
+  office VARCHAR NULL,
+  county VARCHAR NOT NULL,
+  political_party VARCHAR NULL,
+  source_website VARCHAR NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE corruption_cases (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  politician_id INTEGER NOT NULL REFERENCES politicians(politician_id),
+  case_description VARCHAR(255) NOT NULL,
+  case_date VARCHAR(255) NOT NULL,
+  legal_outcome VARCHAR(255) NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_reviews (
+  id SERIAL PRIMARY KEY,
+  politician_id INTEGER NOT NULL REFERENCES politicians(politician_id),
+  case_description VARCHAR(255) NOT NULL,
+  review_text VARCHAR(255) NOT NULL,
+  user_id VARCHAR(255) NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
