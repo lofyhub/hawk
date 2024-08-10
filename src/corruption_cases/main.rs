@@ -20,7 +20,7 @@ async fn get_most_upvoted_cases(db: web::Data<Database>) -> impl Responder {
             let response = SuccessResponse::new_multiple(values);
             HttpResponse::Ok().json(response)
         }
-        Err(err)=> {
+        Err(err) => {
             let error_message = format!("{}", err);
             let error_response = ErrorResponse::new(error_message);
             HttpResponse::InternalServerError().json(error_response)
