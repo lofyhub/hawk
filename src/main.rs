@@ -35,7 +35,7 @@ fn run_migrations(connection: &mut impl MigrationHarness<DB>) {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let port_str = std::env::var("PORT").unwrap_or("8080".to_string());
-    let port: u16 = port_str.parse().expect("PORT must be a valid number");
+    let port: u16 = port_str.parse::<u16>().expect("PORT must be a valid number");
 
     let politicians_db = repository::database::Database::new();
     run_migrations(&mut politicians_db.pool.get().unwrap());
@@ -72,7 +72,7 @@ async fn main() -> std::io::Result<()> {
             .service(save_review_upvote)
             .service(get_most_upvoted_cases)
     })
-    .bind(("127.0.0.1", port))?
+    .bind(("0.0.0.0", port))?
     .run()
     .await
 }

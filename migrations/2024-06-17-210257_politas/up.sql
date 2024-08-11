@@ -25,7 +25,7 @@ CREATE TABLE user_reviews (
   id SERIAL PRIMARY KEY,
   politician_id INTEGER NOT NULL REFERENCES politicians(politician_id),
   case_description VARCHAR(255) NOT NULL,
-  review_text VARCHAR(255) NOT NULL,
+  revieww_text VARCHAR(255) NOT NULL,
   user_id VARCHAR(255) NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
