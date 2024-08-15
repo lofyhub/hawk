@@ -58,6 +58,7 @@ async fn save_corrupt_politicians(
     }
 
     let politician = db.create_corrupt_politician(corrupt_politician.into_inner());
+    println!("{:?}",politician);
     match politician {
         Ok(politician) => {
             let success_response = SuccessResponse::new_single(politician);

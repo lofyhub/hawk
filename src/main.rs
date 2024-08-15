@@ -8,8 +8,9 @@ mod votes;
 
 use actix_cors::Cors;
 use actix_governor::{Governor, GovernorConfigBuilder};
-use actix_web::{web, App, HttpServer};
+use actix_web::{http::header, web, App, HttpServer};
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness};
+use dotenv::dotenv;
 use env_logger::Env;
 #[macro_use]
 extern crate diesel_migrations;
@@ -34,8 +35,12 @@ fn run_migrations(connection: &mut impl MigrationHarness<DB>) {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let port_str = std::env::var("PORT").unwrap_or("8080".to_string());
-    let port: u16 = port_str.parse::<u16>().expect("PORT must be a valid number");
+    dotenv().ok();
+    
+    let port_str = std::env::var("PORT").unwrap();
+    let port: u16 = port_str
+        .parse::<u16>()
+        .expect("PORT must be a valid number");
 
     let politicians_db = repository::database::Database::new();
     run_migrations(&mut politicians_db.pool.get().unwrap());
@@ -52,7 +57,13 @@ async fn main() -> std::io::Result<()> {
         .unwrap();
 
     HttpServer::new(move || {
-        let cors = Cors::default().allow_any_origin().send_wildcard();
+        let cors = Cors::default()
+            .allow_any_origin()
+            .allowed_methods(vec!["GET", "POST", "DELETE", "PUT"])
+            .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
+            .allowed_header(header::CONTENT_TYPE)
+            .max_age(3600);
+
         App::new()
             .app_data(app_data.clone())
             .wrap(Governor::new(&governor_conf))

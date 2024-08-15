@@ -17,6 +17,8 @@ pub struct Politician {
     pub photo_url: Option<String>,
     pub created_at: Option<chrono::NaiveDateTime>,
     pub updated_at: Option<chrono::NaiveDateTime>,
+    pub year_of_birth: Option<i32>,
+    pub sex: Option<String>,
 }
 
 #[derive(Debug, Validate, Deserialize, Serialize, Clone, Insertable)]
@@ -34,6 +36,8 @@ pub struct NewPolitician {
     pub source_website: Option<String>,
     #[validate(url)]
     pub photo_url: Option<String>,
+    pub year_of_birth: Option<i32>,
+    pub sex: Option<String>,
 }
 
 static VALID_COUNTIES: phf::Set<&'static str> = phf_set! {

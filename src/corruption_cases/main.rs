@@ -34,6 +34,7 @@ async fn save_corruption_case(
     corrupt_case: web::Json<NewCorruptionCase>,
 ) -> impl Responder {
     let saved_case = db.save_corruption_case(corrupt_case.into_inner());
+    println!("{:?}", saved_case);
     match saved_case {
         Ok(case) => {
             let success_response = SuccessResponse::new_single(case);
