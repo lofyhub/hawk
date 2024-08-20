@@ -1,6 +1,7 @@
+use crate::upload::MultipartRequestWithFile;
 use actix_web::{get, post, web, HttpResponse, Responder};
-
 use actix_web_validator::Json;
+use cloudinary::upload::result::UploadResult::{Error as CloudinaryError, Success};
 use models::politicians::NewPolitician;
 use repository::database::Database;
 use serde::{Deserialize, Serialize};
@@ -49,25 +50,47 @@ async fn get_corrupt_politicians(db: web::Data<Database>) -> impl Responder {
 
 #[post("/politicians")]
 async fn save_corrupt_politicians(
+    payload: MultipartRequestWithFile,
     db: web::Data<Database>,
-    corrupt_politician: Json<NewPolitician>,
 ) -> impl Responder {
+    let corrupt_politician = payload.politician.clone();
+
     match corrupt_politician.validate() {
         Ok(_) => (),
-        Err(err) => return HttpResponse::BadRequest().body(err.to_string()),
-    }
-
-    let politician = db.create_corrupt_politician(corrupt_politician.into_inner());
-    println!("{:?}",politician);
-    match politician {
-        Ok(politician) => {
-            let success_response = SuccessResponse::new_single(politician);
-            HttpResponse::Created().json(success_response)
-        }
         Err(err) => {
-            let error_message = format!("{}", err);
+            let error_message =
+                format!("some error occured while validating json payload: {}", err);
+            println!("some error occured while validating json payload: {}", err);
+            return HttpResponse::BadRequest().json(error_message);
+        }
+    };
+
+    match payload.upload_to_cloudinary().await {
+        Success(response) => {
+            let image_url_str = response.secure_url;
+
+            let mut filty_politician = corrupt_politician;
+            filty_politician.photo_url = Some(image_url_str);
+
+            let politician = db.create_corrupt_politician(filty_politician);
+
+            println!("{:?}", politician);
+            match politician {
+                Ok(politician) => {
+                    let success_response = SuccessResponse::new_single(politician);
+                    return  HttpResponse::Created().json(success_response);
+                }
+                Err(err) => {
+                    let error_message = format!("{}", err);
+                    let error_res = ErrorResponse::new(error_message);
+                    return HttpResponse::InternalServerError().json(error_res);
+                }
+            }
+        }
+        CloudinaryError(value) => {
+            let error_message = format!("Failed to upload to cloudinary: {:?}", value);
             let error_res = ErrorResponse::new(error_message);
-            HttpResponse::InternalServerError().json(error_res)
+            return  HttpResponse::BadRequest().json(error_res);
         }
     }
 }

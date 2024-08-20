@@ -236,8 +236,4 @@ diesel::table! {
 diesel::joinable!(corruption_cases -> politicians (politician_id));
 diesel::joinable!(user_reviews -> corruption_cases (case_id));
 
-diesel::allow_tables_to_appear_in_same_query!(
-    corruption_cases,
-    politicians,
-    user_reviews,
-);
+diesel::allow_tables_to_appear_in_same_query!(corruption_cases, politicians, user_reviews,);

@@ -135,7 +135,7 @@ impl Database {
             .order(cor_created_at.desc())
             .load(&mut self.pool.get().unwrap())
             .expect("Failed to query corruption cases");
-        return result;
+        result
     }
 
     pub fn save_corruption_case(
@@ -162,25 +162,23 @@ impl Database {
             .load(&mut self.pool.get().unwrap())
             .optional()
             .unwrap();
-        result
-            .map(|values| {
-                let mut cases_with_reviews: HashMap<i32, CaseWithReviews> = HashMap::new();
+        result.and_then(|values| {
+            let mut cases_with_reviews: HashMap<i32, CaseWithReviews> = HashMap::new();
 
-                for (case, review) in values {
-                    let entry = cases_with_reviews
-                        .entry(case.id)
-                        .or_insert(CaseWithReviews {
-                            case,
-                            reviews: Vec::new(),
-                        });
-                    if let Some(review) = review {
-                        entry.reviews.push(review);
-                    }
+            for (case, review) in values {
+                let entry = cases_with_reviews
+                    .entry(case.id)
+                    .or_insert(CaseWithReviews {
+                        case,
+                        reviews: Vec::new(),
+                    });
+                if let Some(review) = review {
+                    entry.reviews.push(review);
                 }
+            }
 
-                cases_with_reviews.get(&cases_id).cloned()
-            })
-            .flatten()
+            cases_with_reviews.get(&cases_id).cloned()
+        })
     }
     pub fn save_user_review(
         &self,
@@ -218,10 +216,9 @@ impl Database {
     }
     // upvotes
     pub fn cases_rating(&self) -> Result<Vec<CorruptionCase>, diesel::result::Error> {
-        let result = corruption_cases
+        corruption_cases
             .select(CorruptionCase::as_select())
             .order(case_upvotes.desc())
-            .load(&mut self.pool.get().unwrap());
-        result
+            .load(&mut self.pool.get().unwrap())
     }
 }

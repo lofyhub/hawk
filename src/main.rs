@@ -2,16 +2,20 @@ mod corruption_cases;
 mod models;
 mod politicians;
 mod repository;
+mod upload;
 mod user_reviews;
 mod utils;
 mod votes;
 
 use actix_cors::Cors;
 use actix_governor::{Governor, GovernorConfigBuilder};
+use actix_web::{error, HttpResponse};
 use actix_web::{http::header, web, App, HttpServer};
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness};
 use dotenv::dotenv;
 use env_logger::Env;
+// use actix_web::FromRequest;
+
 #[macro_use]
 extern crate diesel_migrations;
 
@@ -36,7 +40,7 @@ fn run_migrations(connection: &mut impl MigrationHarness<DB>) {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
-    
+
     let port_str = std::env::var("PORT").unwrap();
     let port: u16 = port_str
         .parse::<u16>()
@@ -64,8 +68,20 @@ async fn main() -> std::io::Result<()> {
             .allowed_header(header::CONTENT_TYPE)
             .max_age(3600);
 
+        let json_cfg = web::JsonConfig::default()
+            .limit(10 * 1024 * 1024) // 10 MB limit
+            .error_handler(|err, _req| {
+                error::InternalError::from_response(err, HttpResponse::Conflict().into()).into()
+            });
+
+        let multipart_cfg = web::FormConfig::default().limit(10 * 1024 * 1024);
+        let payload_cfg = web::PayloadConfig::default().limit(10 * 1024 * 1024);
+
         App::new()
             .app_data(app_data.clone())
+            .app_data(json_cfg.clone())
+            .app_data(multipart_cfg.clone())
+            .app_data(payload_cfg.clone())
             .wrap(Governor::new(&governor_conf))
             .wrap(cors)
             .service(health)
