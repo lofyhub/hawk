@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -46,7 +46,7 @@ pub struct PoliticianCases {
 
 impl Database {
     pub fn new() -> Self {
-        dotenv().ok();
+        dotenv().expect(".env file not found");
         let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
         let manager = ConnectionManager::<PgConnection>::new(database_url);

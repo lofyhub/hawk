@@ -1,15 +1,16 @@
 use crate::upload::MultipartRequestWithFile;
+use crate::utils::HEALTH_CHECKS;
 use actix_web::{get, post, web, HttpResponse, Responder};
-use actix_web_validator::Json;
 use cloudinary::upload::result::UploadResult::{Error as CloudinaryError, Success};
-use models::politicians::NewPolitician;
+use dotenvy::dotenv;
 use repository::database::Database;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use validator::Validate;
+use rand::Rng;
 
+use crate::repository;
 use crate::utils::{ErrorResponse, SuccessResponse};
-use crate::{models, repository};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Info {
@@ -74,11 +75,10 @@ async fn save_corrupt_politicians(
 
             let politician = db.create_corrupt_politician(filty_politician);
 
-            println!("{:?}", politician);
             match politician {
                 Ok(politician) => {
                     let success_response = SuccessResponse::new_single(politician);
-                    return  HttpResponse::Created().json(success_response);
+                    return HttpResponse::Created().json(success_response);
                 }
                 Err(err) => {
                     let error_message = format!("{}", err);
@@ -88,22 +88,27 @@ async fn save_corrupt_politicians(
             }
         }
         CloudinaryError(value) => {
-            let error_message = format!("Failed to upload to cloudinary: {:?}", value);
+            let error_message = format!("Failed to upload image to cloudinary: {:?}", value);
             let error_res = ErrorResponse::new(error_message);
-            return  HttpResponse::BadRequest().json(error_res);
+            return HttpResponse::BadRequest().json(error_res);
         }
     }
 }
 
 #[get("/")]
 async fn health() -> impl Responder {
-    // Create a JSON response
+    dotenv().ok();
+    let mut rng = rand::thread_rng();
+    let rand_num = rng.gen_range(0..10);
+
+    let app_name = std::env::var("APP_NAME").unwrap();
+
     HttpResponse::Ok().json(json!({
-        "app_name": "Politas",
-        "status": "healthy",
-        "message": "Why don't programmers like nature? It has too many bugs.",
+        "app_name": app_name,
+        "check":HEALTH_CHECKS[rand_num],
     }))
 }
+
 #[post("/echo")]
 async fn echo(req_body: String) -> impl Responder {
     HttpResponse::Ok().body(req_body)

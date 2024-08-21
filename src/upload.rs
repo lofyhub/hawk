@@ -1,3 +1,4 @@
+use crate::models::politicians::NewPolitician;
 use actix_multipart::{Field, Multipart};
 use actix_web::dev::Payload;
 use actix_web::web::Bytes;
@@ -5,7 +6,7 @@ use actix_web::ResponseError;
 use actix_web::{FromRequest, HttpRequest};
 use base64::{engine::general_purpose, Engine as _};
 use cloudinary::upload::{result::UploadResult, Source, Upload, UploadOptions};
-use crate::models::politicians::NewPolitician;
+use dotenvy::dotenv;
 use futures::TryStreamExt;
 use std::ffi::OsStr;
 use std::fmt;
@@ -44,26 +45,22 @@ impl MultipartRequestWithFile {
     pub async fn from_multipart(
         mut multipart: Multipart,
     ) -> Result<Self, <Self as FromRequest>::Error> {
-        // The request might not contain any of the parameters, so need to check their presence
         let mut file_name: Option<String> = None;
         let mut file_content: Option<Vec<Bytes>> = None;
         let mut politician_data: Option<NewPolitician> = None;
 
         let mut bytes_len: usize = 0;
-        // Iterate over all the multipart fields
-        while let Ok(Some(mut field)) = multipart.try_next().await {
-            println!("This is a multipart field: {:?}", &field);
 
-            // Ensure content disposition is available
+        while let Ok(Some(mut field)) = multipart.try_next().await {
             if let Some(content_disposition) = field.content_disposition() {
                 if let Some(field_name) = content_disposition.get_name() {
                     match field_name {
                         "json" => {
                             let json_data = Self::read_string(&mut field).await;
                             if let Some(json_string) = json_data {
-                                // Deserialize the JSON string into your struct
                                 let parsed_json: Result<NewPolitician, _> =
                                     serde_json::from_str(&json_string);
+
                                 match parsed_json {
                                     Ok(json_struct) => {
                                         politician_data = Some(json_struct);
@@ -77,6 +74,9 @@ impl MultipartRequestWithFile {
                                 }
                             } else {
                                 println!("No JSON data found");
+                                return Err(actix_web::error::ErrorBadRequest(
+                                    "No JSON data found in request FormData",
+                                ));
                             }
                         }
                         "file" => {
@@ -138,8 +138,8 @@ impl MultipartRequestWithFile {
         for chunk in &self.file_content {
             bytes_slice.extend_from_slice(chunk)
         }
-        let image_base64 = general_purpose::STANDARD.encode(bytes_slice);
 
+        let image_base64 = general_purpose::STANDARD.encode(bytes_slice);
         let image_data_uri = format!("data:image/{};base64,{}", image_extention, image_base64);
 
         upload_img_to_cloudinary(image_data_uri, self.file_name.to_string()).await
@@ -174,18 +174,20 @@ impl FromRequest for MultipartRequestWithFile {
 }
 
 async fn upload_img_to_cloudinary(data_url: String, file_name: String) -> UploadResult {
+    dotenv().ok();
+
+    let api_key = std::env::var("CLOUDINARY_API_KEY").unwrap();
+    let cloud_name = std::env::var("CLOUDINARY_CLOUD_NAME").unwrap();
+    let secret_key = std::env::var("CLOUDINARY_SECRET_KEY").unwrap();
+
     let options = UploadOptions::new().set_public_id(file_name);
-    let upload = Upload::new(
-        "824696885955381".to_string(),
-        "deye3gicq".to_string(),
-        "rRS6znH_5wvEhcZzUYZNqi7zXt0".to_string(),
-    );
+    let upload = Upload::new(api_key, cloud_name, secret_key);
     let result = upload.image(Source::DataUrl(data_url), &options).await;
+
     result.unwrap()
 }
 
 fn get_extension_from_filename(filename: &str) -> Option<String> {
-    println!("file name is{}", filename);
     let file_ext = Path::new(filename).extension().and_then(OsStr::to_str);
     match file_ext {
         Some(ext) => Some(ext.to_string()),
