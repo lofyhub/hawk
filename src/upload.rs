@@ -14,7 +14,7 @@ use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
 
-const MAX_IMAGE_SIZE: usize = 5 * 1024 * 1024; // 5 MB
+const MAX_IMAGE_SIZE: usize = 5242880; // 5 MB
 const _MAX_NUM_FILES: u8 = 1;
 
 pub struct MultipartRequestWithFile {

@@ -39,7 +39,7 @@ fn run_migrations(connection: &mut impl MigrationHarness<DB>) {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    dotenv().expect(".env file not found");
+    dotenv().ok();
 
     let port_str = env::var("PORT").unwrap();
     let port: u16 = port_str
